@@ -60,41 +60,34 @@ if user_input := st.chat_input("Type your question here..."):
     # Generate model response
     with st.chat_message("assistant"):
         candidate_models = [
-            "gemini-flash-latest",
-            "gemini-3.1-flash-lite",
-            "gemini-3.5-flash-lite",
-            "gemini-3.8-flash",
-        ]
-        success = False
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+    ]
+    success = False
 
-        for model_name in candidate_models:
-            for attempt in range(3):
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                        config=types.GenerateContentConfig(
-                            system_instruction=SUPPORT_PROMPT,
-                            temperature=0.3,
-                        )
-                    )
-                    assistant_text = response.text
-                    st.markdown(assistant_text)
-                    st.session_state.messages.append({"role": "assistant", "content": assistant_text})
-                    success = True
-                    break
-                except Exception as e:
-                    if "503" in str(e):
-                        time.sleep(2)
-                        continue
-                    break
-            if success:
+for model_name in candidate_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SUPPORT_PROMPT,
+                        temperature=0.3,
+                    ),
+                )
+                assistant_text = response.text
+                st.markdown(assistant_text)
+                st.session_state.messages.append({"role": "assistant", "content": assistant_text})  
+                success = True
                 break
+            except Exception:
+                continue
 
-        if not success:
-            fallback_reply = (
+            if not success:
+                fallback_reply = (
                 "Thank you for contacting NovaTech Support! I can help you track your package. "
                 "Could you please share your **8-digit Order ID** so I can retrieve the latest shipping status?"
             )
             st.markdown(fallback_reply)
-            st.session_state.messages.append({"role": "assistant", "content": fallback_reply}) 
+            st.session_state.messages.append({"role": "assistant", "content": fallback_reply})  
