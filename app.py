@@ -52,42 +52,46 @@ if user_input := st.chat_input("Type your question here..."):
         st.markdown(user_input)
 
     # Format history for the Gemini API call
+# Format history for the Gemini API call
     contents = []
     for msg in st.session_state.messages:
         role = "model" if msg["role"] == "assistant" else "user"
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
 
     # Generate model response
-    with st.chat_message("assistant"):
-        candidate_models = [
+with st.chat_message("assistant"):
+    candidate_models = [
         "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-1.5-flash",
     ]
+    
     success = False
-
-for model_name in candidate_models:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction=SUPPORT_PROMPT,
-                        temperature=0.3,
-                    ),
-                )
-                assistant_text = response.text
-                st.markdown(assistant_text)
-                st.session_state.messages.append({"role": "assistant", "content": assistant_text})  
-                success = True
-                break
-            except Exception:
-                continue
-
-            if not success:
-                fallback_reply = (
-                "Thank you for contacting NovaTech Support! I can help you track your package. "
-                "Could you please share your **8-digit Order ID** so I can retrieve the latest shipping status?"
+    
+    for model_name in candidate_models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=SUPPORT_PROMPT,
+                    temperature=0.3,
+                ),
             )
-            st.markdown(fallback_reply)
-            st.session_state.messages.append({"role": "assistant", "content": fallback_reply})  
+            assistant_text = response.text
+            st.markdown(assistant_text)
+            st.session_state.messages.append({"role": "assistant", "content": assistant_text})
+            success = True
+            break
+        except Exception as e:
+            # Helps verify why a model failed during development
+            print(f"Model {model_name} failed: {e}")
+            continue
+
+    if not success:
+        fallback_reply = (
+            "Thank you for contacting NovaTech Support! I can help you track your package. "
+            "Could you please share your **8-digit Order ID** so I can retrieve the latest shipping status?"
+        )
+        st.markdown(fallback_reply)
+        st.session_state.messages.append({"role": "assistant", "content": fallback_reply})
